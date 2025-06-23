@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>brhttp - Servidor HTTP em Go para desenvolvimento</title>
+    <style>
+        :root {
+            --primary: #2F80ED;
+            --primary-dark: #2566C2;
+            --accent: #FF6B6B;
+            --secondary: #6FCF97;
+            --bg-dark: #0F172A;
+            --bg-darker: #0B1120;
+            --text-light: #F8FAFC;
+            --text-muted: #94A3B8;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Hero Section */
+        .hero {
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            text-align: center;
+            padding: 4rem 0;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--bg-darker) 0%, var(--bg-dark) 100%);
+        }
+        
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(47,128,237,0.15) 0%, rgba(15,23,42,0) 70%);
+            z-index: -1;
+        }
+        
+        .hero-content {
+            width: 100%;
+        }
+        
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -1px;
+        }
+        
+        .hero p {
+            font-size: 1.5rem;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            color: var(--text-muted);
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.8rem;
+            border-radius: 6px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin: 0.5rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-outline {
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 5rem 0;
+            background-color: var(--bg-darker);
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+            font-size: 2.5rem;
+            color: var(--text-light);
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .section-title::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            border-radius: 2px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .feature-card {
+            background-color: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-light);
+        }
+        
+        .feature-card p {
+            color: var(--text-muted);
+        }
+        
+        /* Code Section */
+        .code-section {
+            padding: 5rem 0;
+            background-color: var(--bg-dark);
+        }
+        
+        .code-tabs {
+            display: flex;
+            margin-bottom: -1px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            flex-wrap: wrap;
+        }
+        
+        .code-tab {
+            padding: 0.8rem 1.5rem;
+            background-color: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-bottom: none;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            margin-right: 0.5rem;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+        }
+        
+        .code-tab:hover {
+            color: var(--text-light);
+            background-color: rgba(255,255,255,0.1);
+        }
+        
+        .code-tab.active {
+            background-color: rgba(47,128,237,0.2);
+            border-bottom: 1px solid var(--bg-dark);
+            color: var(--primary);
+        }
+        
+        .code-container {
+            background-color: #0F172A;
+            border-radius: 0 6px 6px 6px;
+            padding: 1.5rem;
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            overflow-x: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        
+        .code-keyword {
+            color: var(--accent);
+        }
+        
+        .code-string {
+            color: var(--secondary);
+        }
+        
+        .code-comment {
+            color: var(--text-muted);
+        }
+        
+        .code-number {
+            color: #79c0ff;
+        }
+        
+        .flags-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+        
+        .flags-table th, .flags-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .flags-table th {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .flags-table tr:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+        
+        /* Automation Section */
+        .automation {
+            padding: 5rem 0;
+            background-color: var(--bg-darker);
+            text-align: center;
+        }
+        
+        .automation-steps {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 3rem 0;
+            gap: 2rem;
+        }
+        
+        .step {
+            position: relative;
+            width: 150px;
+        }
+        
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .step p {
+            color: var(--text-light);
+            font-weight: 500;
+        }
+        
+        .step-arrow {
+            position: absolute;
+            top: 25px;
+            right: -30px;
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+        
+        /* Donation Section */
+        .donation {
+            padding: 4rem 0;
+            text-align: center;
+            background-color: rgba(255,255,255,0.03);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .donation h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        
+        .donation p {
+            max-width: 600px;
+            margin: 0 auto 1.5rem;
+            color: var(--text-muted);
+        }
+        
+        .pix-code {
+            background-color: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: monospace;
+            margin: 1rem auto;
+            max-width: 300px;
+            word-break: break-all;
+            color: var(--secondary);
+        }
+        
+        .donation-btn {
+            display: inline-block;
+            padding: 0.8rem 1.8rem;
+            background-color: var(--accent);
+            color: white;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .donation-btn:hover {
+            background-color: var(--accent-dark);
+            transform: translateY(-2px);
+        }
+        
+        /* Footer */
+        footer {
+            padding: 2rem 0;
+            text-align: center;
+            background-color: var(--bg-darker);
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .footer-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .footer-link:hover {
+            color: var(--primary);
+        }
+        
+        .license {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero p {
+                font-size: 1.2rem;
+            }
+            
+            .step-arrow {
+                display: none;
+            }
+            
+            .automation-steps {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-links {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .flags-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>brhttp</h1>
+                <p>Servidor de desenvolvimento local de alta performance com automação de build e webhooks</p>
+                <div class="hero-buttons">
+                    <a href="https://github.com/henriquetourinho/brhttp" class="btn btn-primary">Ver no GitHub</a>
+                    <a href="#installation" class="btn btn-outline">Instalação Rápida</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <h2 class="section-title">Funcionalidades Principais</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Live Reload & HMR</h3>
+                    <p>Atualização automática do navegador quando arquivos são modificados.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⇄</div>
+                    <h3>Reverse Proxy</h3>
+                    <p>Encaminha requisições para outros servidores durante o desenvolvimento.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Automação com Webhooks</h3>
+                    <p>Executa comandos automaticamente quando arquivos são modificados.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🖥️</div>
+                    <h3>API de Gerenciamento</h3>
+                    <p>Controle programático do servidor via API REST.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚙️</div>
+                    <h3>Configuração Flexível</h3>
+                    <p>Suporte a JSON ou flags de linha de comando.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📦</div>
+                    <h3>Binário Único</h3>
+                    <p>Não requer dependências externas.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Section -->
+    <section class="code-section" id="installation">
+        <div class="container">
+            <h2 class="section-title">Como Usar</h2>
+            
+            <div class="code-tabs">
+                <div class="code-tab active" onclick="showTab('basic')">Uso Básico</div>
+                <div class="code-tab" onclick="showTab('flags')">Flags</div>
+                <div class="code-tab" onclick="showTab('config')">Config.json</div>
+                <div class="code-tab" onclick="showTab('api')">API</div>
+            </div>
+            
+            <div class="code-container" id="basic-code">
+                <pre><span class="code-comment"># Executar o servidor na porta padrão (5571)</span>
+<span class="code-keyword">go</span> run main.go
+
+<span class="code-comment"># Ou usando o binário compilado</span>
+./brhttp</pre>
+            </div>
+            
+            <div class="code-container" id="flags-code" style="display: none;">
+                <pre><span class="code-comment"># Executar com configurações personalizadas</span>
+./brhttp <span class="code-keyword">--port</span> <span class="code-number">8080</span> <span class="code-keyword">--spa-fallback</span> <span class="code-keyword">--watch</span> <span class="code-string">"./src"</span>
+
+<span class="code-comment"># Habilitar proxy reverso</span>
+./brhttp <span class="code-keyword">--proxy</span> <span class="code-string">"/api=http://localhost:3000"</span>
+
+<span class="code-comment"># Flags Disponíveis:</span></pre>
+                
+                <table class="flags-table">
+                    <thead>
+                        <tr>
+                            <th>Flag</th>
+                            <th>Descrição</th>
+                            <th>Padrão</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>--port</code></td>
+                            <td>Porta de escuta do servidor HTTP</td>
+                            <td>5571</td>
+                        </tr>
+                        <tr>
+                            <td><code>--dir</code></td>
+                            <td>Diretório raiz a ser servido</td>
+                            <td>www</td>
+                        </tr>
+                        <tr>
+                            <td><code>--config</code></td>
+                            <td>Caminho para o arquivo de configuração config.json</td>
+                            <td>""</td>
+                        </tr>
+                        <tr>
+                            <td><code>--spa-fallback</code></td>
+                            <td>Habilita o fallback para index.html em rotas não encontradas</td>
+                            <td>false</td>
+                        </tr>
+                        <tr>
+                            <td><code>--enable-gzip</code></td>
+                            <td>Habilita a compressão Gzip para as respostas</td>
+                            <td>false</td>
+                        </tr>
+                        <tr>
+                            <td><code>--enable-dir-listing</code></td>
+                            <td>Permite a listagem de conteúdo de diretórios</td>
+                            <td>false</td>
+                        </tr>
+                        <tr>
+                            <td><code>--inject-js</code></td>
+                            <td>Injeta um arquivo JavaScript em todas as páginas HTML</td>
+                            <td>""</td>
+                        </tr>
+                        <tr>
+                            <td><code>--inject-css</code></td>
+                            <td>Injeta um arquivo CSS em todas as páginas HTML</td>
+                            <td>""</td>
+                        </tr>
+                        <tr>
+                            <td><code>--404-page</code></td>
+                            <td>Caminho para uma página de erro 404 personalizada</td>
+                            <td>""</td>
+                        </tr>
+                        <tr>
+                            <td><code>--log-file</code></td>
+                            <td>Caminho para o arquivo de log</td>
+                            <td>server.log</td>
+                        </tr>
+                        <tr>
+                            <td><code>--api-token</code></td>
+                            <td>Token de autenticação "Bearer" para a API de gerenciamento</td>
+                            <td>""</td>
+                        </tr>
+                        <tr>
+                            <td><code>--notification-webhook-url</code></td>
+                            <td>URL para webhooks de notificação de mudança</td>
+                            <td>""</td>
+                        </tr>
+                        <tr>
+                            <td><code>--watch-debounce-ms</code></td>
+                            <td>Tempo de espera (ms) para o watcher após uma mudança</td>
+                            <td>100</td>
+                        </tr>
+                        <tr>
+                            <td><code>--watch-exclude-dirs</code></td>
+                            <td>Diretórios a excluir do watcher (separados por vírgula)</td>
+                            <td>""</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="code-container" id="config-code" style="display: none;">
+                <pre><span class="code-comment"># Executar com arquivo de configuração</span>
+./brhttp <span class="code-keyword">--config</span> <span class="code-string">config.json</span>
+
+<span class="code-comment"># Exemplo de config.json:</span>
+{
+  <span class="code-string">"port"</span>: <span class="code-number">5571</span>,
+  <span class="code-string">"serve_dir"</span>: <span class="code-string">"public"</span>,
+  <span class="code-string">"spa_fallback_enabled"</span>: <span class="code-keyword">true</span>,
+  <span class="code-string">"gzip_enabled"</span>: <span class="code-keyword">true</span>,
+  <span class="code-string">"log_file_path"</span>: <span class="code-string">"brhttp.log"</span>,
+  <span class="code-string">"api_token"</span>: <span class="code-string">"seu-token-secreto-aqui-jwt-ou-similar"</span>,
+  <span class="code-string">"watch_debounce_ms"</span>: <span class="code-number">150</span>,
+  <span class="code-string">"watch_exclude_dirs"</span>: [<span class="code-string">"node_modules"</span>, <span class="code-string">".git"</span>, <span class="code-string">"dist"</span>],
+  <span class="code-string">"proxy_rules"</span>: [
+    {
+      <span class="code-string">"path"</span>: <span class="code-string">"/api/v1"</span>,
+      <span class="code-string">"target"</span>: <span class="code-string">"http://localhost:3000"</span>
+    }
+  ],
+  <span class="code-string">"redirects"</span>: [
+    {
+      <span class="code-string">"from"</span>: <span class="code-string">"/documentacao-antiga"</span>,
+      <span class="code-string">"to"</span>: <span class="code-string">"/docs/v2"</span>,
+      <span class="code-string">"code"</span>: <span class="code-number">301</span>
+    }
+  ],
+  <span class="code-string">"command_webhooks"</span>: [
+    {
+      <span class="code-string">"event"</span>: <span class="code-string">"server_start"</span>,
+      <span class="code-string">"command"</span>: <span class="code-string">"npm"</span>,
+      <span class="code-string">"args"</span>: [<span class="code-string">"run"</span>, <span class="code-string">"watch-css"</span>]
+    },
+    {
+      <span class="code-string">"event"</span>: <span class="code-string">"file_change"</span>,
+      <span class="code-string">"path"</span>: <span class="code-string">"src/ts"</span>,
+      <span class="code-string">"command"</span>: <span class="code-string">"npm"</span>,
+      <span class="code-string">"args"</span>: [<span class="code-string">"run"</span>, <span class="code-string">"build-ts"</span>]
+    }
+  ]
+}</pre>
+            </div>
+            
+            <div class="code-container" id="api-code" style="display: none;">
+                <pre><span class="code-comment"># O servidor expõe uma API REST para gerenciamento programático</span>
+<span class="code-comment"># Requer a configuração de um api_token e o cabeçalho Authorization: Bearer &lt;token&gt;</span>
+
+<span class="code-comment"># GET /api/status - Retorna o estado atual do servidor</span>
+curl http://localhost:5571/api/status \
+  -H <span class="code-string">"Authorization: Bearer seu-token-secreto-aqui-jwt-ou-similar"</span>
+
+<span class="code-comment"># POST /api/reload - Dispara um evento de live-reload</span>
+curl -X POST http://localhost:5571/api/reload \
+  -H <span class="code-string">"Authorization: Bearer seu-token-secreto-aqui-jwt-ou-similar"</span>
+
+<span class="code-comment"># POST /api/command - Executa um comando no sistema</span>
+curl -X POST http://localhost:5571/api/command \
+  -H <span class="code-string">"Authorization: Bearer seu-token-secreto-aqui-jwt-ou-similar"</span> \
+  -H <span class="code-string">"Content-Type: application/json"</span> \
+  -d <span class="code-string">'{"command": "git", "args": ["pull"]}'</span></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Automation Section -->
+    <section class="automation">
+        <div class="container">
+            <h2 class="section-title">Automação Simplificada</h2>
+            <p>O brhttp transforma seu fluxo de desenvolvimento com automação baseada em eventos</p>
+            
+            <div class="automation-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <p>Arquivo Salvo</p>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <p>brhttp (Webhook)</p>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <p>Executa Comando</p>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <p>Navegador Atualiza</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Donation Section -->
+    <section class="donation">
+        <div class="container">
+            <h3>❤️ Apoie Este Projeto</h3>
+            <p>O brhttp é desenvolvido de forma independente e de código aberto. Se o projeto te ajudou, considere apoiar para que continue evoluindo.</p>
+            
+            <div class="pix-code">
+                poupanca@henriquetourinho.com.br
+            </div>
+            
+            <p>Qualquer valor é bem-vindo e muito apreciado!</p>
+            
+            <a href="#" class="donation-btn">
+                Doar via PIX
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://github.com/henriquetourinho/brhttp" class="footer-link">GitHub</a>
+                <a href="https://br.linkedin.com/in/carloshenriquetourinhosantana" class="footer-link">LinkedIn</a>
+                <a href="https://wiki.debian.org/henriquetourinho" class="footer-link">Debian Wiki</a>
+            </div>
+            <p class="license">Licença GPL-3.0 &copy; 2023 Carlos Henrique Tourinho Santana</p>
+        </div>
+    </footer>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all code containers
+            document.querySelectorAll('.code-container').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.code-tab').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Show selected container and mark tab as active
+            document.getElementById(tabName + '-code').style.display = 'block';
+            event.currentTarget.classList.add('active');
+        }
+    </script>
+</body>
+</html>
