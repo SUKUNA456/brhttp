@@ -1,7 +1,7 @@
 /*
 brhttp — Servidor Web Estático Minimalista com Live Reload
 ---------------------------------------------------------
-Versão:      v1.3
+Versão:      v1.4
 Licença:     GPL-3.0
 Go:          1.18+
 Plataforma:  Linux/Unix
@@ -11,7 +11,7 @@ GitHub:      https://github.com/henriquetourinho/brhttp
 Descrição:
 -----------
 O brhttp é um servidor HTTP minimalista escrito em Go, voltado para servir arquivos estáticos (HTML, CSS, JS, imagens, etc) com máxima simplicidade, segurança básica e desempenho.  
-A partir da versão v1.3, inclui recarregamento automático de páginas HTML (Live Reload) ao editar arquivos no diretório servido, tornando-o ideal para desenvolvimento web local.
+A partir da versão v1.4, inclui recarregamento automático de páginas HTML (Live Reload) ao editar arquivos no diretório servido, tornando-o ideal para desenvolvimento web local.
 
 Principais recursos:
 --------------------
@@ -54,9 +54,11 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/gorilla/websocket" // Importa a biblioteca padrão para WebSockets em Go
 )
 
-// # --- Hub e Vigia (Live Reload) --- #
+// # --- Hub e Lógica de Live Reload --- #
+// (Nenhuma alteração necessária aqui, o Hub é genérico e funciona perfeitamente)
 type Hub struct {
 	clients    map[chan string]bool
 	register   chan chan string
@@ -64,6 +66,7 @@ type Hub struct {
 	broadcast  chan string
 	mu         sync.Mutex
 }
+
 func newHub() *Hub {
 	return &Hub{
 		clients:    make(map[chan string]bool),
@@ -113,23 +116,27 @@ func watchFiles(hub *Hub, path string) {
 	if err != nil {
 		log.Fatalf("ERRO: Vigia path: %v", err)
 	}
-	log.Printf("--> [Vigia] Observando a pasta '%s'", path)
+	log.Printf("--> [Vigia] Observando a pasta '%s' para mudanças...", path)
 	for {
 		select {
 		case event, ok := <-watcher.Events:
-			if !ok { return }
+			if !ok {
+				return
+			}
 			if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create || event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
+				log.Printf("--> [Vigia] Mudança detectada: %s. Enviando sinal de reload.", event.Name)
 				hub.broadcast <- "reload"
 			}
 		case _, ok := <-watcher.Errors:
-			if !ok { return }
+			if !ok {
+				return
+			}
 		}
 	}
 }
 
 // # --- Middlewares (Postos de Controle) --- #
 
-// noCacheMiddleware força o navegador a não usar cache.
 func noCacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -139,18 +146,48 @@ func noCacheMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// liveReloadInjectorMiddleware injeta o script de live-reload APENAS em páginas HTML.
-const liveReloadScript = `<script>const evtSource=new EventSource("/livereload-events");evtSource.onmessage=function(event){if(event.data==='reload'){console.log("brhttp: Mudança detectada, recarregando...");window.location.reload();}};</script>`
+// CORRIGIDO: O script agora usa a API de WebSocket no lado do cliente.
+const liveReloadScriptWS = `<script>
+(function() {
+    const connect = () => {
+        const socket = new WebSocket("ws://" + window.location.host + "/ws");
+        
+        socket.onopen = function() {
+            console.log("brhttp: Conectado ao servidor de Live Reload.");
+        };
+
+        socket.onmessage = function(event) {
+            if (event.data === 'reload') {
+                console.log("brhttp: Mudança detectada, recarregando...");
+                window.location.reload();
+            }
+        };
+
+        socket.onclose = function(event) {
+            console.log("brhttp: Conexão Live Reload perdida. Tentando reconectar em 1s...");
+            setTimeout(connect, 1000); // Tenta reconectar após 1 segundo
+        };
+
+		socket.onerror = function(error) {
+			console.error("brhttp: Erro no WebSocket: ", error);
+			socket.close();
+		};
+    };
+    connect();
+})();
+</script>`
+
 type responseRecorder struct {
 	http.ResponseWriter
 	body *bytes.Buffer
 }
+
 func (r *responseRecorder) Write(b []byte) (int, error) { return r.body.Write(b) }
 
 func liveReloadInjectorMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Apenas injeta em requisições para arquivos que terminam com .html
-		if !strings.HasSuffix(strings.ToLower(r.URL.Path), ".html") {
+		// Só injeta se for um GET para um arquivo HTML
+		if r.Method != http.MethodGet || !strings.HasSuffix(strings.ToLower(r.URL.Path), ".html") {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -158,6 +195,8 @@ func liveReloadInjectorMiddleware(next http.Handler) http.Handler {
 		buffer := &bytes.Buffer{}
 		recorder := &responseRecorder{ResponseWriter: w, body: buffer}
 		next.ServeHTTP(recorder, r)
+
+		// Copia os headers originais, exceto o Content-Length que será recalculado
 		for key, values := range recorder.Header() {
 			if strings.ToLower(key) != "content-length" {
 				for _, value := range values {
@@ -165,13 +204,13 @@ func liveReloadInjectorMiddleware(next http.Handler) http.Handler {
 				}
 			}
 		}
-		bodyBytes := bytes.Replace(buffer.Bytes(), []byte("</body>"), []byte(liveReloadScript+"</body>"), 1)
+
+		bodyBytes := bytes.Replace(buffer.Bytes(), []byte("</body>"), []byte(liveReloadScriptWS+"</body>"), 1)
 		w.Header().Set("Content-Length", fmt.Sprint(len(bodyBytes)))
 		w.Write(bodyBytes)
 	})
 }
 
-// loggingMiddleware registra cada requisição no console.
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -181,10 +220,53 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// NOVO: Upgrader para "promover" conexões HTTP para WebSocket
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	// Em desenvolvimento, permitimos qualquer origem. Em produção, isso deve ser mais restrito.
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+// NOVO: Handler para as conexões WebSocket
+func wsHandler(hub *Hub, w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("ERRO: Falha ao fazer upgrade para WebSocket: %v", err)
+		return
+	}
+
+	// Cria um canal para este cliente, registra no hub e garante o desregistro na saída.
+	clientChan := make(chan string)
+	hub.register <- clientChan
+	defer func() { hub.unregister <- clientChan }()
+
+	// Goroutine para enviar mensagens do Hub para o cliente WebSocket
+	go func() {
+		defer conn.Close()
+		for message := range clientChan {
+			if err := conn.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
+				// Se não conseguir escrever, assume que o cliente desconectou
+				return
+			}
+		}
+	}()
+
+	// Loop para manter a conexão viva e detectar quando o cliente desconecta.
+	// Se ReadMessage retornar erro, significa que a conexão caiu.
+	for {
+		if _, _, err := conn.ReadMessage(); err != nil {
+			break // Sai do loop e aciona os 'defers'
+		}
+	}
+}
+
 // # --- Função Principal (O Coração do Programa) --- #
 
 func main() {
-	webrootDir := "./www"
+	webrootDir := "./www" // Diretório padrão
 	if len(os.Args) > 1 {
 		webrootDir = os.Args[1]
 	}
@@ -196,41 +278,16 @@ func main() {
 	go hub.run()
 	go watchFiles(hub, webrootDir)
 
-	// Cria o servidor de arquivos que aponta para o nosso diretório raiz
 	fileServer := http.FileServer(http.Dir(webrootDir))
-
 	router := http.NewServeMux()
 
-	// Rota especial para os eventos de Live Reload
-	router.HandleFunc("/livereload-events", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		messageChan := make(chan string)
-		hub.register <- messageChan
-		defer func() { hub.unregister <- messageChan }()
-		flusher, ok := w.(http.Flusher)
-		if !ok {
-			http.Error(w, "Streaming not supported", http.StatusInternalServerError)
-			return
-		}
-		for {
-			select {
-			case message, open := <-messageChan:
-				if !open { return }
-				fmt.Fprintf(w, "data: %s\n\n", message)
-				flusher.Flush()
-			case <-r.Context().Done():
-				return
-			}
-		}
+	// CORRIGIDO: Rota para as conexões WebSocket
+	router.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		wsHandler(hub, w, r)
 	})
 
-	// Rota principal que serve os arquivos
-	// O injetor de script agora está junto com o fileServer.
 	router.Handle("/", liveReloadInjectorMiddleware(fileServer))
 
-	// Encadeia apenas os middlewares globais.
 	handler := loggingMiddleware(noCacheMiddleware(router))
 
 	server := &http.Server{
@@ -243,7 +300,7 @@ func main() {
 
 	go func() {
 		log.Println("======================================================================")
-		log.Printf("🚀 Servidor 'brhttp v1.3 (Estável)' iniciado. Escutando em http://localhost:5571")
+		log.Printf("🚀 Servidor 'brhttp v1.4 (WebSocket)' iniciado. Escutando em http://localhost:5571")
 		log.Printf("--> O diretório que será exibido é: %s", webrootDir)
 		log.Println("======================================================================")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
