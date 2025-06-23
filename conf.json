@@ -1,0 +1,17 @@
+{
+  "port": 5571,
+  "serve_dir": "public",
+  "inject_js_path": "dev-scripts/debug.js",
+  "inject_css_path": "dev-styles/dev.css",
+  "spa_fallback_enabled": true,
+  "dir_listing_enabled": false,
+  "gzip_enabled": true,
+  "custom_404_page_path": "errors/404.html",
+  "proxy_rules": [
+    {
+      "path": "/api/",
+      "target": "http://localhost:3000"
+    },
+    {
+      "path": "/auth/",
+      "target": "http://localhost:400
