@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/versão-v1.8-blue.svg" alt="Versão" />
   <img src="https://img.shields.io/badge/licença-GPL--3.0-blue.svg" alt="Licença" />
   <img src="https://img.shields.io/badge/Go-1.18%2B-cyan.svg" alt="Go Version" />
-  <img src="https://img.shields.io/badge/plataforma-Linux-blue.svg" alt="Plataforma" />
+  <img src="https://img.shields.io/badge/plataformas-Linux | macOS | Unix | Android-blue.svg" alt="Plataformas Suportadas" />
 </p>
 
 ## 1. Introdução
@@ -25,10 +25,7 @@ O sistema é "zero-config" por padrão, mas permite customização extensiva atr
 -   **API de Gerenciamento Remoto:** Expõe uma API REST (`/api/*`) protegida por token para controle programático do servidor, permitindo disparar reloads, executar comandos e verificar o status da instância.
 -   **Cadeia de Middlewares:** Inclui middlewares para compressão Gzip, tratamento de CORS, desabilitação de cache e logging de requisições.
 
-
-
 ## 3. Instalação e Execução
-
 
 ### 3.1. Pré-requisitos
 -   Go versão 1.18 ou superior.
@@ -85,7 +82,7 @@ go run main.go --dir=dist --port=8080 --spa-fallback --enable-gzip
 
 #### 3.3.3. Via Arquivo de Configuração
 
-Para configurações complexas, especialmente `proxy_rules` e `command_webhooks`, utilize um arquivo `config.json`.
+Para configurações complexas, especialmente `proxy_rules`, `redirects` e `command_webhooks`, utilize um arquivo `config.json`.
 
 ```bash
 go run main.go --config config.json
@@ -138,7 +135,7 @@ O servidor expõe uma API REST para gerenciamento programático. Requer a config
 
 #### 4.1. `GET /api/status`
 
-Retorna o estado atual do servidor.
+Retorna o estado atual do servidor, incluindo uptime e número de clientes conectados.
 
 ```bash
 curl http://localhost:5571/api/status \
@@ -177,27 +174,25 @@ Este projeto foi desenhado como uma ferramenta de desenvolvimento e não é reco
   - **Monousuário:** Não possui um sistema de autenticação de usuários para o conteúdo servido.
   - **Logs Simples:** O logging em arquivo não inclui rotação automática.
 
+-----
+
+## 🔄 Evolução do brhttp: v1.8 vs. Anteriores
+
+A tabela abaixo detalha a evolução do projeto, desde um servidor puro até uma suíte de desenvolvimento local completa.
+
+| Característica | v1.8 (Suíte de Dev Completa) | v1.5 (Dev Server) | v1.4 (WebSockets) | v1.3 (SSE) | v1.0 (Inicial) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Live Reload** | ✅ **Sim, HMR com JS/CSS** | ✅ Sim, avançado (HMR) | ✅ Sim, robusto | ✅ Sim, funcional | ❌ Não |
+| **Tecnologia** | WebSockets (com HMR) | WebSockets (com HMR) | WebSockets | Server-Sent Events | Nenhuma |
+| **Configuração** | **Flags, JSON e API** | Flags e arquivo JSON | Nenhuma | Nenhuma | Nenhuma |
+| **Foco Principal** | **Suíte de Dev Completa** | Dev local avançado | Dev local (robusto) | Dev local (básico) | Servidor estático puro |
+| **Middlewares** | `logging`, `gzip`, `noCache`, `cors`, `rewrite`, `proxy`, `injector`, `spa`, `custom404` | `logging`, `noCache`, `cors`, `gzip`, `proxy`, `rewrite`, `spa`, `custom404`, `injector` | `logging`, `noCache`, `liveReloadInjector` | `logging`, `noCache`, `liveReloadInjector` | `logging`, `noDirListing` |
+| **Funcionalidades** | **Webhooks (Comando/Notificação), API Remota, Redirects** | Reverse Proxy, SPA, Gzip, Rewrites, CORS, Injeção de código | Servidor estático | Servidor estático | Servidor estático |
+| **Dependências** | `fsnotify`, `gorilla/websocket` | `fsnotify`, `gorilla/websocket` | `fsnotify`, `gorilla/websocket` | `fsnotify` | Nenhuma |
+
+**Vantagem da v1.8:** A versão 1.8 eleva o `brhttp` a uma suíte de desenvolvimento completa, adicionando automação (webhooks) e gerenciamento remoto (API), rivalizando com soluções mais complexas como `webpack-dev-server` ou `Browsersync`, mas mantendo a simplicidade e a performance de um binário Go único e sem dependências.
+
 ---
-
-
-## 🔄 Evolução do brhttp: v1.5 vs. Anteriores
-
-A tabela abaixo detalha a evolução do projeto, desde um servidor puro até uma suíte de desenvolvimento local.
-
-| Característica | v1.5 (Atual - Dev Server) | v1.4 (WebSockets) | v1.3 (SSE) | v1.0 (Inicial) |
-| :--- | :--- | :--- | :--- | :--- |
-| **Live Reload** | ✅ **Sim, avançado (HMR)** | ✅ Sim, robusto | ✅ Sim, funcional | ❌ Não |
-| **Tecnologia** | WebSockets (com HMR) | WebSockets | Server-Sent Events (SSE) | Nenhuma |
-| **Configuração** | **Flags e arquivo JSON** | Nenhuma | Nenhuma | Nenhuma |
-| **Foco Principal** | **Dev local avançado** | Dev local (robusto) | Dev local (básico) | Servidor estático puro |
-| **Middlewares** | `logging`, `noCache`, `cors`, `gzip`, `proxy`, `rewrite`, `spa`, `custom404`, `injector` | `logging`, `noCache`, `liveReloadInjector` | `logging`, `noCache`, `liveReloadInjector` | `logging`, `noDirListing` |
-| **Funcionalidades** | **Reverse Proxy, SPA, Gzip, Rewrites, CORS, Injeção de código** | Servidor estático | Servidor estático | Servidor estático |
-| **Dependências** | `fsnotify`, `gorilla/websocket` | `fsnotify`, `gorilla/websocket` | `fsnotify` | Nenhuma |
-
-**Vantagem da v1.5:** A versão 1.5 transforma o `brhttp` em uma ferramenta de desenvolvimento completa, rivalizando com soluções como `live-server` do Node.js, mas com a performance e simplicidade de um binário Go. Ele resolve problemas comuns de desenvolvimento, como proxy de API e roteamento de SPA.
-
-
-
 ## 🤝 Apoie o projeto
 
 Se o **brhttp** foi útil, ajude a manter o desenvolvimento:
