@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/versão-v1.8-blue.svg" alt="Versão" />
   <img src="https://img.shields.io/badge/licença-GPL--3.0-blue.svg" alt="Licença" />
   <img src="https://img.shields.io/badge/Go-1.18%2B-cyan.svg" alt="Go Version" />
-  <img src="https://img.shields.io/badge/plataformas-Linux | macOS | Unix | Android-blue.svg" alt="Plataformas Suportadas" />
+  <img src="https://img.shields.io/badge/plataformas-Linux | Unix | Android | macOS | Windows-blue.svg" alt="Plataformas Suportadas" />
 </p>
 
 ## 1. Introdução
