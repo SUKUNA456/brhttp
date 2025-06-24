@@ -25,7 +25,10 @@ O sistema é "zero-config" por padrão, mas permite customização extensiva atr
 -   **API de Gerenciamento Remoto:** Expõe uma API REST (`/api/*`) protegida por token para controle programático do servidor, permitindo disparar reloads, executar comandos e verificar o status da instância.
 -   **Cadeia de Middlewares:** Inclui middlewares para compressão Gzip, tratamento de CORS, desabilitação de cache e logging de requisições.
 
+
+
 ## 3. Instalação e Execução
+
 
 ### 3.1. Pré-requisitos
 -   Go versão 1.18 ou superior.
@@ -174,9 +177,26 @@ Este projeto foi desenhado como uma ferramenta de desenvolvimento e não é reco
   - **Monousuário:** Não possui um sistema de autenticação de usuários para o conteúdo servido.
   - **Logs Simples:** O logging em arquivo não inclui rotação automática.
 
-
-
 ---
+
+
+## 🔄 Evolução do brhttp: v1.5 vs. Anteriores
+
+A tabela abaixo detalha a evolução do projeto, desde um servidor puro até uma suíte de desenvolvimento local.
+
+| Característica | v1.5 (Atual - Dev Server) | v1.4 (WebSockets) | v1.3 (SSE) | v1.0 (Inicial) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Live Reload** | ✅ **Sim, avançado (HMR)** | ✅ Sim, robusto | ✅ Sim, funcional | ❌ Não |
+| **Tecnologia** | WebSockets (com HMR) | WebSockets | Server-Sent Events (SSE) | Nenhuma |
+| **Configuração** | **Flags e arquivo JSON** | Nenhuma | Nenhuma | Nenhuma |
+| **Foco Principal** | **Dev local avançado** | Dev local (robusto) | Dev local (básico) | Servidor estático puro |
+| **Middlewares** | `logging`, `noCache`, `cors`, `gzip`, `proxy`, `rewrite`, `spa`, `custom404`, `injector` | `logging`, `noCache`, `liveReloadInjector` | `logging`, `noCache`, `liveReloadInjector` | `logging`, `noDirListing` |
+| **Funcionalidades** | **Reverse Proxy, SPA, Gzip, Rewrites, CORS, Injeção de código** | Servidor estático | Servidor estático | Servidor estático |
+| **Dependências** | `fsnotify`, `gorilla/websocket` | `fsnotify`, `gorilla/websocket` | `fsnotify` | Nenhuma |
+
+**Vantagem da v1.5:** A versão 1.5 transforma o `brhttp` em uma ferramenta de desenvolvimento completa, rivalizando com soluções como `live-server` do Node.js, mas com a performance e simplicidade de um binário Go. Ele resolve problemas comuns de desenvolvimento, como proxy de API e roteamento de SPA.
+
+
 
 ## 🤝 Apoie o projeto
 
